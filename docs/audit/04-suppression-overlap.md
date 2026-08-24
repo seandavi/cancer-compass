@@ -1,18 +1,29 @@
 # Task 0.4 — Suppression overlap (incidence ∩ mortality)
 
-**Status: answered.** Computed directly against the pinned V3 parquet files (downloaded from
-`https://zenodo.org/records/22085273/files/`, sha256-recorded in the build manifest — see M2),
-at the headline stratum: `locale_type='county'`, `cancer='All Cancer Sites'`, `sex='Both Sexes'`,
-`race='All Races (includes Hispanic)'`, `age='All Ages'`, and (incidence only) `stage='All Stages'`.
+**Status: answered, corrected 2026-08-24.** Computed directly against the pinned V3 parquet files
+(downloaded from `https://zenodo.org/records/22085273/files/`, sha256-recorded in the build
+manifest — see M2), at the headline stratum: `locale_type='county'`, `cancer='All Cancer Sites'`,
+`sex='Both Sexes'`, `race='All Races (includes Hispanic)'`, `age='All Ages'`, and (incidence only)
+`stage='All Stages'`.
 
-| Metric | N | % of 3,143 counties |
+> **Correction, found by Task 0.7 (`docs/audit/07-adjacency.md`):** the original run below counted
+> `72001` as a county. It is Puerto Rico served in aggregate under `areatype='By County'`, not an
+> actual county — confirmed non-null in both incidence (344.4) and mortality (99.2) at the headline
+> stratum, so it inflated every row here by exactly 1. The real modelling universe for this vintage
+> is **3,142 counties**, matching Task 0.7's independent TIGER2021 cross-check. Corrected table:
+
+| Metric | N | % of 3,142 counties |
 |---|---:|---:|
-| Total county FIPS | 3,143 | 100% |
-| Incidence usable | 3,029 | 96.4% |
-| Mortality usable | 3,084 | 98.1% |
-| **Both usable — MIR computable** | **2,980** | **94.8%** |
+| Total county FIPS | 3,142 | 100% |
+| Incidence usable | 3,028 | 96.4% |
+| Mortality usable | 3,083 | 98.1% |
+| **Both usable — MIR computable** | **2,979** | **94.8%** |
 | Incidence only (mortality missing) | 49 | 1.6% |
 | Mortality only (incidence missing) | 104 | 3.3% |
+
+(Original, uncorrected run, kept for the audit trail: total 3,143 / incidence 3,029 / mortality
+3,084 / both 2,980 — percentages are unchanged since the correction removes one fully-populated row
+from both numerator and denominator.)
 
 **Geographic pattern of loss:**
 
