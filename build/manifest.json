@@ -1,0 +1,53 @@
+{
+  "_comment": "Pinned upstream sources for county-cancer-atlas, per CLAUDE.md's 'every claim traces to a pinned, hashed upstream source' rule. Never repoint an entry at a mutable 'latest' URL. Add entries as later milestones ingest more sources (NPPES, NCI facilities, ClinicalTrials.gov, Liu et al. travel-time matrix) rather than tracking hashes only in docs/audit/*.md.",
+  "sources": {
+    "scp_incidence": {
+      "url": "https://zenodo.org/records/22085273/files/state_cancer_profiles_incidence.parquet?download=1",
+      "zenodo_doi": "10.5281/zenodo.22085273",
+      "vintage": "V3",
+      "sha256": "66aa8a7b7101343b6df711543d2b10e70ecae3227594d84d4f907b2e56603585",
+      "bytes": 75844731,
+      "verified": "2026-08-24"
+    },
+    "scp_mortality": {
+      "url": "https://zenodo.org/records/22085273/files/state_cancer_profiles_mortality.parquet?download=1",
+      "zenodo_doi": "10.5281/zenodo.22085273",
+      "vintage": "V3",
+      "sha256": "d144011cb2569e73dcad7511d63f328022acd8c9df1ad98030a60b923cd80e60",
+      "bytes": 38275580,
+      "verified": "2026-08-24"
+    },
+    "scp_risk": {
+      "url": "https://zenodo.org/records/22085273/files/state_cancer_profiles_risk.parquet?download=1",
+      "zenodo_doi": "10.5281/zenodo.22085273",
+      "vintage": "V3",
+      "sha256": "794f6b891faf87dd64c7494b783d5445a6bd455cdd55defecc71e5d8b9ffb9da",
+      "bytes": 644522,
+      "verified": "2026-08-24"
+    },
+    "scp_demographics": {
+      "url": "https://zenodo.org/records/22085273/files/state_cancer_profiles_demographics.parquet?download=1",
+      "zenodo_doi": "10.5281/zenodo.22085273",
+      "vintage": "V3",
+      "sha256": "f38e187a2479a82ba0013c0609bcf2f92b3fa019312589bc32af2d55bbfd95c6",
+      "bytes": 17508453,
+      "verified": "2026-08-24"
+    },
+    "tiger2021_county": {
+      "url": "https://www2.census.gov/geo/tiger/TIGER2021/COUNTY/tl_2021_us_county.zip",
+      "sha256": "26890ff92275ff1392cd205c7021ba510b7f63f2ff985ca327b9f5fd5e9ecc90",
+      "bytes": 82328531,
+      "note": "Last TIGER vintage with Connecticut as counties rather than planning regions (docs/audit/07-adjacency.md). Do not upgrade to a newer TIGER vintage without re-deriving the FIPS crosswalk.",
+      "verified": "2026-08-24"
+    }
+  },
+  "not_yet_pinned": [
+    "NPPES monthly bulk file (docs/audit/05-nppes.md) — pin the specific dated URL used for a given build, not the index page",
+    "NUCC taxonomy CSV (docs/audit/05-nppes.md) — v26.1 as of the audit; record version string separately from file hash since NUCC reuses version labels",
+    "NCI_CancerCenter_Address_2025.zip (docs/audit/06-travel-time.md)",
+    "Liu et al. 2026 Harvard Dataverse deposit, doi:10.7910/DVN/OIFW0D v4.0 (docs/audit/06-travel-time.md) — pin specific file ids + md5, not the dataset DOI alone",
+    "NVSS restricted-use mortality micro-data (docs/audit/03-cdc-wonder.md §9) — blocked on DUA approval, not yet obtainable",
+    "SEER county population files, seer.cancer.gov/popdata/ (docs/audit/03-cdc-wonder.md §8, §9a's Connecticut finding)",
+    "ClinicalTrials.gov site geocoding — not yet scoped"
+  ]
+}

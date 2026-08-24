@@ -2,4 +2,7 @@ node_modules
 dist
 .DS_Store
 *.local
-build-manifest.local.json
+
+# Build cache and outputs — reproducible from build/manifest.json + build/*.sql, never committed
+build/cache/
+build/out/
