@@ -6,3 +6,4 @@ dist
 # Build cache and outputs — reproducible from build/manifest.json + build/*.sql, never committed
 build/cache/
 build/out/
+__pycache__/
