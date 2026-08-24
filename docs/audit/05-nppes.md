@@ -341,6 +341,18 @@ validate that the Health Care Provider is Licensed or Credentialed."
 
 ---
 
+## Open item
+
+Every data-quality number above is **measured directly from the August 2026 file**, not taken
+from a published validation study. A literature cross-check — peer-reviewed NPPES address
+validation studies, and how existing oncology-workforce papers handled staleness, multi-location
+practices, and county assignment — was started but not completed within this audit. Worth closing
+before the M6 methods section, for two reasons: the paper will need to cite precedent for the
+approach in §7, and a published staleness or misattribution estimate would let us say whether
+44.6% is typical of NPPES generally or specific to oncology. It does not gate M5.
+
+---
+
 ## Sources
 
 All fetched or computed 2026-08-24.
