@@ -1,5 +1,10 @@
 # Task 0.3 follow-up — alternatives to the WONDER county-level refusal
 
+**Superseded 2026-08-24 — merged into `03-cdc-wonder.md` §9/§9a, which expands on and in one place
+corrects this file (the Connecticut finding below no longer holds; see `03-cdc-wonder.md` §8's
+Connecticut item for the resolution via SEER's planning-region-to-county conversion). Read `03`
+for the current answer; this file is kept only for the audit trail.**
+
 **Status: answered. One viable path found, with one thing still unverified.** Follow-on to
 `docs/audit/03-cdc-wonder.md` (which found CDC WONDER refuses all sub-national queries via its API).
 This surveys every other plausible source of annual county-level cancer mortality counts,

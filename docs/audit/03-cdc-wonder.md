@@ -1,12 +1,23 @@
 # Task 0.3 — CDC WONDER extraction
 
-**Status: answered, and it is a NO. The premise in SPEC.md §1/§2.2/§2.4 that annual county-level
-mortality counts can be pulled programmatically from CDC WONDER is false. CDC WONDER's API refuses
-all sub-national queries by policy, verified empirically against the live service.**
+**Status: answered. CDC WONDER is a NO; the data is obtainable another way.**
 
-Everything below was tested against the live service on **2026-08-24**. Probe scripts and raw
+The premise in SPEC.md §1/§2.2/§2.4 that annual county-level mortality counts can be pulled
+programmatically from CDC WONDER is **false** — WONDER's API refuses all sub-national queries by
+explicit NVSS policy, verified empirically against the live service (§3). **But the underlying data is
+available as NVSS restricted-use micro-data**, which is a better input than WONDER would have been:
+record-level, all counties, 1989–latest, no cell suppression, no rate limit (§9). The cost is a
+~4-week NCHS approval with no stated fee, which lands on the critical path for M4–M8.
+
+**One item remains genuinely open and could still invalidate the deliverable:** whether per-county
+figures derived from restricted-use micro-data may be *published* on a public site. No output-review
+clause appears in the public conditions of use, but the DUA text itself was not read. Resolve this
+while the application is open — see §9 and decision 2.
+
+Everything in §§1–8 was tested against the live service on **2026-08-24**. Probe scripts and raw
 request/response pairs are in the session scratchpad (`wtest.py`, `req_*.xml`, `resp_*.xml`); the
-reproduction recipe is in §7 so this can be re-verified rather than trusted.
+reproduction recipe is in §7 so this can be re-verified rather than trusted. §9 was verified against
+NCHS primary sources rather than the live API.
 
 ---
 
@@ -264,10 +275,11 @@ Reproduction: `POST` the example request at
 `accept_datause_restrictions=true`; change `B_1` to `D76.V9-level2` to reproduce the refusal in §3.
 Wait 15 s between requests.
 
-## 8. County-level gaps that apply even if county access is obtained
+## 8. County-level gaps found in WONDER's documentation
 
-Found while reading the two databases' help pages; these bite regardless of how the counts are
-sourced, so they are recorded here rather than rediscovered later.
+Found while reading the two databases' help pages. **Read this alongside §9** — some of these are
+WONDER artifacts that the micro-data route makes disappear, others are upstream facts about the
+underlying data that survive any sourcing choice. Each item below says which.
 
 - **D158 publishes no county-level age-specific populations at all.** Stated three times in
   `help/ucd-expanded.html`: "Rates and populations are not available for single-year age groups or
@@ -282,6 +294,9 @@ sourced, so they are recorded here rather than rediscovered later.
   single year of age, sex and bridged race, 1969–2024
   (<https://seer.cancer.gov/popdata/>) is the standard substitute and is what NCI itself uses for
   SCP's rates, so using it keeps this project's denominators consistent with the archive it builds on.
+
+  *(WONDER artifact — irrelevant on the §9 micro-data route, where age-specific counts come from the
+  records themselves. Recorded because it is what rules out the WONDER route even for M3.)*
 
   **The denominator side is fully solved and needs no negotiation** — verified by download, not
   assumed. `https://seer.cancer.gov/popdata/yr1969_2024.20ages/wy.1969_2024.20ages.txt.gz` returned
@@ -298,11 +313,19 @@ sourced, so they are recorded here rather than rediscovered later.
   off WONDER at all — it must be computed by the project from county × year × age-group *counts* and
   independent denominators. The methodological contribution SPEC.md §2.1 claims is still available,
   but it costs strictly more than the spec assumes.
-- **Connecticut breaks in 2022.** "Population estimates and rates are flagged as 'Not Available' for
-  the eight Connecticut counties in years 2022-2024. Deaths are reported for the eight Connecticut
-  counties in years 2022-2024." CT reports population by nine *planning regions* from 2022. Counts
-  exist, denominators do not. CT joins Kansas and Indiana as a page that must exist and explain
-  itself (SPEC.md §3).
+- **Connecticut breaks in 2022 — but only in WONDER, and SEER already fixes it.** WONDER:
+  "Population estimates and rates are flagged as 'Not Available' for the eight Connecticut counties in
+  years 2022-2024. Deaths are reported for the eight Connecticut counties in years 2022-2024." CT
+  reports population by nine *planning regions* from 2022, so WONDER has counts but no denominators.
+  **This does not propagate to this project**, because the SEER population file we are already using
+  for denominators resolves it upstream: "starting with Vintage 2022, nine planning regions are used
+  as county-equivalent geographic units … To align with the geographic unit currently used for
+  tracking cancer incidence and deaths, W&P converted 2020-2024 populations for Connecticut from
+  planning regions to counties" (<https://seer.cancer.gov/popdata/>). So CT county denominators 2022–24
+  *are* available from SEER even though WONDER reports none — a concrete argument for taking
+  denominators from SEER rather than from the mortality source. **CT therefore does not need a
+  Kansas-style explanation page**, but the planning-region-to-county conversion is a modelled
+  reallocation and should be disclosed in methods.
 - **Alaska geography changes in 2020.** Valdez-Cordova Census Area (02261) was split; WONDER sums
   Copper River (02066) and Chugach (02063) populations as its denominator for 2020+. A stable
   county panel needs an explicit crosswalk.
@@ -311,10 +334,89 @@ sourced, so they are recorded here rather than rediscovered later.
   CT (FIPS 09011)" in the Underlying Cause of Death database. State totals and the two-county
   aggregate are correct.
 - **Miami-Dade FIPS change**: 12025 → 12086, effective 1997-11-13; WONDER uses 12086.
-- **`O_show_suppressed`, `O_show_zeros`, `O_show_totals`** must be set deliberately. Suppressed and
+The Alaska recode, the CT-2000 misassignment and the Miami-Dade FIPS change are **upstream facts about
+the death records** and survive any sourcing choice — they need a county-FIPS crosswalk in the build
+regardless. The remaining items are WONDER-only.
+
+- **`O_show_suppressed`, `O_show_zeros`, `O_show_totals`** must be set deliberately (WONDER-only).
+  Suppressed and
   zero rows are omitted unless requested, which would silently turn a suppressed county into an
   absent row rather than an explicit "no reliable estimate" — precisely the failure mode CLAUDE.md
   forbids. Set all three to `true` on every extraction query.
+
+## 9. Where the county numerator actually comes from: NVSS restricted-use micro-data
+
+WONDER is a dead end, but the data is obtainable — and by a route that is *better* than the query
+API, not merely a fallback. Verified against NCHS primary sources.
+
+**The route: NVSS Restricted-Use Vital Statistics Data**
+(<https://www.cdc.gov/nchs/nvss/nvss-restricted-data.htm>, page reviewed 2026-05-27). The offered
+file is literally *"Deaths (Mortality) — Multiple cause of death, states and all counties —
+Detailed"*, and the release-policy table grants **"Death - All Counties | 1989-latest | State Yes |
+County All"**. The policy text:
+
+> Researchers may request micro-data files … containing geographic detail for all states and counties
+> for those data years with limited (1989-2004) or no (2005 forward) geographic detail in the
+> public-use files. NCHS will evaluate the research request. If approved, the applicant will have
+> access to the files upon submission of a signed NCHS Data Use Agreement.
+
+**This is record-level micro-data, not a query interface, and that changes the whole extraction
+picture.** Every problem in §§3–6 evaporates: no rate limit, no 1,071 queries, no 15-second floor, no
+XML parsing, no WONDER cell suppression (suppression is a *presentation* rule applied by WONDER, not
+a property of the micro-data), and full freedom to aggregate county × year × age × sex × ICD-10 site
+however the model needs. **The §6 extraction-time estimate becomes irrelevant** — the cost is a
+one-time ~4-week approval, then local aggregation. Files come to you: *"The data files should be
+stored on, and accessed from, the secure computer system of the researcher's affiliated
+organization."* Not an enclave.
+
+**Requirements:** Project Review Form plus investigator CVs to `nvssrestricteddata@cdc.gov`; an
+institutional Data Use Agreement signed by an authorized official **who is not the PI**, using a PKI
+digital certificate; *"please allow up to 4 weeks for processing."* **No fee is stated** for this
+route.
+
+**Two listed disqualifiers, neither of which bites here:** *"Requests that plan to assess a single
+state"* and *"Requests that involve using NCHS data for commercial or resale purposes."* A national
+3,143-county non-commercial atlas is clear on both — but note the second one constrains how the site
+may ever be monetized, which is worth knowing before SPEC.md §0's "cancer center credited as sponsor"
+turns into anything resembling a commercial arrangement.
+
+**Do NOT go via the NCHS Research Data Center.** It is the wrong door and would be refused:
+<https://www.cdc.gov/rdc/nchs-geographic-variables/index.html> states *"The committee never approves
+projects to produce county-level or lower-level estimates from NCHS survey data"* and *"The RDC
+rarely approves projects involving geographic estimates at levels lower than the national level."*
+RDC also charges $3,000 (1–6 data years) / $3,750 (7–8) / $4,500 (9–10). The restricted-use route
+above is a different program with different rules; do not conflate them in correspondence.
+
+**The one genuinely open item is publication terms.** The eight Conditions of Use on the
+restricted-data page are all file-handling (use only for the stated scope, destroy on completion, no
+sharing outside the DUA, no cloud storage, no re-identification) — there is **no output-review or
+publication-approval clause**, which is the RDC's mechanism, not this one. But the DUA text itself was
+not read, so "no barrier appears in the public conditions" is as far as this audit goes; it is not an
+affirmative clearance to publish 3,143 per-county counts. Assume NCHS presentation standards apply:
+`presentation-standards-mortality-2024.pdf` suppresses rates based on fewer than 20 deaths with an
+asterisk. **Resolve this before M4, not after** — and note the question to put to NCHS is specifically
+about publishing *modeled posterior estimates* (SPEC.md §2.2) rather than observed small counts,
+which is a materially easier ask and is what the site actually renders.
+
+Corroborating our §3 finding, from the NCHS release policy: *"CDC WONDER includes more geographic
+detail than the downloadable public-use files."* The API is the deliberately narrowest channel of
+the three.
+
+### 9a. Everything else checked, and why each fails
+
+| Source | County? | Verdict |
+|---|---|---|
+| **NCHS public-use micro-data, 2005–2024** | **None** | Dead. `Record_Layout_2005.pdf` p1: "A new vital statistics data access policy excluding geographic identifiers goes into effect with the 2005 data year information." County FIPS appears only in the separate **Territories** file. Confirmed identically in the 2019 and 2024 layouts. |
+| **NCHS public-use micro-data, 1999–2004** | Partial, unusable | Only counties ≥100,000 population are individually identified; all others collapse into a single per-state `999` bucket — roughly **570 of 3,143 counties**. Exactly inverted from what this project needs, since the small rural counties are the whole point of §2.2. |
+| NBER mirrors | None | "No geographic identifiers are included in the files for 2005-on due to a restriction imposed by the States." Adds nothing. |
+| data.cdc.gov / healthdata.gov | — | No county-level cancer mortality dataset exists at all. |
+| **NCI State Cancer Profiles** | 5-year only | County mortality is 5-year windows only, consistent with `docs/audit/02-counts-vs-rates.md`. Critically, **its Historical Trends tool is state/US only** — the area dropdown has 54 state options and no county. **So §2.4's trajectory analytic cannot be sourced from SCP.** |
+| IHME GHDx US county estimates | Annual, but modeled | Genuinely annual county series (1980–2014, 2000–2019), but these are **modeled small-area estimates of rates, not observed counts** — unusable as Poisson observations for §2.2, and non-commercial licence. Usable only as an external validation comparator. |
+
+The authoritative summary is NCHS's own release-policy table
+(<https://www.cdc.gov/nchs/nvss/dvs_data_release.htm>, reviewed 2024-10-31): public-use county detail
+is **"All"** for 1988 and earlier, **"Population size >= 100,000"** for 1989–2004, and **No / No /
+No** (state / county / city) for 2005–latest.
 
 ---
 
@@ -326,32 +428,49 @@ NVSS policy. There is no parameter combination, database, or request form that u
 through the web service; six probes including an unfiltered all-counties request all return the same
 refusal.
 
-**M4 is blocked on a data source, not on modeling.** The BYM2 model needs observed and expected
-counts per county per year, and `docs/audit/02-counts-vs-rates.md` already established SCP's
-`average_annual_count` is a 5-year annualized average that cannot supply an annual panel. WONDER was
-the named replacement. It is not available on the terms the spec assumes, so M4's input does not
-currently exist in this build's reach.
+**But M2 and M4 are not blocked — the route just changes.** §9 establishes that NVSS restricted-use
+micro-data grants "Death - All Counties | 1989-latest", as record-level files delivered to the
+researcher's own systems, with a ~4-week approval and no stated fee. That is a *better* input than
+WONDER queries would have been: record-level data means the annual county × age × site panel the BYM2
+model needs can be aggregated locally, with no cell suppression, no rate limit, and no 1,071-query
+extraction. **The §6 time estimate is superseded** — the schedule item is a 4-week approval lead time,
+not a multi-day scrape.
 
-**M3 (the go/no-go) is degraded but not blocked.** Window-aligned MIR needs a 2018–2022 county
-mortality rate. That rate cannot be read from WONDER (D158 publishes no county age-adjusted rates,
-and 2021–2022 exist only in D158), so it has to be *computed* from county age-group death counts
-plus SEER county populations — which returns to the same missing numerator. If county counts cannot
-be obtained, M3 must either fall back to SCP's own 2019–2023 mortality rate and drop the
-window-alignment claim (losing the stated methodological contribution), or narrow the MIR window to
-years D76 covers.
+**The practical effect on M2 is a dependency reordering, not a descoping.** M2 cannot start its
+mortality workstream until the DUA is signed, so the application is now on the critical path for
+M4–M8. SEER county populations (§8) and TIGER adjacency are unblocked and can proceed in parallel.
 
-**Decisions this forces, before M2 starts:**
+**M3 (the go/no-go) is unblocked but costs more than the spec assumes.** Window-aligned MIR needs a
+2018–2022 county mortality rate, and §8 shows WONDER cannot supply one at any price (D158 publishes no
+county age-adjusted rates, and 2021–2022 exist only in D158). With restricted-use micro-data the rate
+is *computable* — county age-group deaths from the micro-data, denominators from SEER — so the
+methodological contribution SPEC.md §2.1 claims survives intact. It just has to be built rather than
+fetched, and it inherits the DUA lead time.
 
-1. Ask CDC whether they will fill a custom county-level data request (cwus@cdc.gov / 888-496-8347),
-   and on what terms for public republication. This is the only route the API docs themselves
-   endorse. Turnaround is unknown, so it should be opened now rather than after M2 stalls.
-2. Decide whether the paper's scope survives on whatever substitute is available — in particular
-   whether a modeled or period-aggregated source is acceptable for §2.4's trajectory analytic, which
-   needs annual points with 2020 excludable from the fit. A period-aggregated source is *not*
-   acceptable for §2.4 by construction, so this may reduce to dropping §2.4 or sourcing it
-   differently.
-3. Treat the 2020/2021 bridged-race → single-race seam as a disclosed methods limitation in any
-   1999–present panel, whatever the source turns out to be.
+**§2.4's trajectory analytic now has exactly one viable source.** SCP's Historical Trends tool is
+state/US only (§9a), so the annual county panel must come from the restricted-use micro-data too.
+There is no fallback: if the DUA is refused, §2.4 is dropped, not degraded.
+
+**Decisions this forces, in order:**
+
+1. **Start the NVSS restricted-data application now.** Project Review Form plus CVs to
+   `nvssrestricteddata@cdc.gov`, institutional DUA signed by an authorized official who is *not* the
+   PI, PKI certificate, ~4 weeks. It gates M4–M8 and nothing else can shorten it. Frame the request
+   as a national multi-state atlas — "requests that plan to assess a single state" are listed as not
+   appropriate.
+2. **Get the publication question answered in writing as part of that application**, not after: may
+   per-county *modeled posterior estimates* derived from the micro-data be published on a public
+   site? Ask about posteriors specifically, since that is what the site renders and it is a much
+   easier ask than publishing observed small counts. This is the one item that could still invalidate
+   the deliverable, so it should be resolved while the application is open rather than discovered at
+   M7.
+3. **Do not file with the Research Data Center.** It would be refused on stated policy and costs
+   $3,000–$4,500 (§9). Different program, different door.
+4. Treat the 2020/2021 bridged-race → single-race seam as a disclosed methods limitation in any
+   1999–present panel. With micro-data this becomes a denominator choice rather than a database
+   stitch, which is cleaner, but it still has to be stated.
+5. Note that "no commercial or resale purposes" is a standing condition on the data — relevant to how
+   SPEC.md §0's sponsorship framing is allowed to evolve.
 
 **Do not attempt to work around §3 by scripting the web UI.** It contradicts a stated CDC access
 policy, and a data provenance chain that cannot be described honestly in a methods section fails
@@ -364,19 +483,21 @@ source") more badly than a missing analytic does.
 
 Recorded so they are not mistaken for settled.
 
-1. **What the substitute numerator is.** A separate survey of alternative county-mortality sources
-   (NCHS public-use micro-data, the NCHS Research Data Center, IHME modelled county estimates,
-   data.cdc.gov holdings, SCP's own annual trend series) was still running when this was written and
-   is **not** reflected here. The two questions that decide the milestone: (a) do the NCHS public-use
-   mortality files carry county of residence, and for which years — sub-state geography is believed
-   to have been removed from 2005 onward, which would leave only 1999–2004 usable; and (b) does the
-   restricted-access route permit **republishing** per-county figures on a public site, or does
-   output review forbid exactly that? A source the project can compute on but not publish from is
-   useless here, given SPEC.md's per-county-page deliverable. Answer (b) before investing in (a).
-2. **D140's API behaviour** — see §4a. Unresolved, probably moot.
-3. **Whether CDC will fill a custom county request, and on what republication terms.** Not asked yet.
-   This is the only route the API documentation itself endorses and it should be opened now.
+1. **Whether per-county figures derived from restricted-use micro-data may be published.** The
+   decisive open item. No output-review clause appears in the eight public Conditions of Use, and
+   output disclosure review is the RDC's mechanism rather than this route's — but the DUA text itself
+   was not read, so this is "no visible barrier," not clearance. A source the project can compute on
+   but not publish from is useless given SPEC.md's per-county-page deliverable. See decision 2.
+2. **Whether NCHS presentation standards bind the published output.**
+   `presentation-standards-mortality-2024.pdf` suppresses rates based on fewer than 20 deaths. If that
+   applies to derived published figures, it collides with SPEC.md §2.2's core premise that the
+   exceedance model fills suppression holes — though publishing a modeled posterior is arguably not
+   publishing a rate based on <20 deaths. Worth asking explicitly rather than assuming either way.
+3. **D140's API behaviour** — see §4a. Unresolved, and moot now that §9 supersedes the query route.
 4. **WAF sensitivity.** Sustained probing from one IP began returning HTTP 403 (Access Denied) on the
    web-application path after roughly 20 requests spread over ~15 minutes, while the API path kept
    working. Anything that ends up talking to WONDER should treat 403 as a back-off signal, not a bug
    to retry through.
+5. **Not re-verified:** the §9 findings come from NCHS documentation read this session, not from a
+   completed application. Page-review dates are recorded inline; NCHS revises these policies, so
+   confirm current terms at application time rather than trusting this note.
