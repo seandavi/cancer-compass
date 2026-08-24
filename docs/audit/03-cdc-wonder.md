@@ -158,6 +158,35 @@ requirement already wants.
 different thresholds across the two sources, so the suppression masks do not coincide and cannot be
 assumed to. Any MIR or comparison built across both must carry two distinct missingness reasons.
 
+### 4a. Compressed Mortality (D140) has a much friendlier county rule — but ends in 2016
+
+Worth recording because it is the historically standard county-mortality source and someone will
+ask. Its suppression regime is far more permissive than the Underlying Cause of Death databases, from
+<https://wonder.cdc.gov/wonder/help/cmf.html>:
+
+> For 1989 and later, counts and rates for counties with census year populations of less than
+> 100,000, are replaced with "Suppressed" if the number of deaths is five or less (death count <=5)
+> **and the death count is based on only one or two years of data.**
+
+and
+
+> Small death counts are not suppressed for counties with small populations if three or [more years
+> of data are combined].
+
+So CMF suppresses at **≤5** rather than <10, only for counties under 100,000 population, and **not at
+all** once three or more years are aggregated. That is a materially better small-county picture than
+D76/D158 offer, and it is the regime a custom data request should ask about.
+
+Two caveats kill it as a standalone answer: **D140 covers only 1999–2016** (D16 covers 1979–1998), so
+it cannot reach the present, and the three-year-aggregation exemption is in tension with SPEC.md
+§2.4's need for annual points. I did **not** get a clean API probe of D140 — its variable schema
+differs from D76 and my substituted request failed schema validation before the location check ran,
+and further probing began returning HTTP 403 from CDC's WAF, at which point I stopped rather than
+risk the IP being blocked from a resource this project needs legitimately. So D140's API behaviour is
+**unresolved**. It is also probably moot: the API help states the restriction covers "mortality and
+births statistics from the National Vital Statistics System," which includes CMF, and the year range
+disqualifies it regardless.
+
 ## 5. Rate limits — two numbers, both real
 
 - **Enforced, observed:** a request sent ~1 s after the previous one returned **HTTP 429**:
