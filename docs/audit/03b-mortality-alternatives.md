@@ -50,11 +50,16 @@ threshold, distinct from both SCP's <16 and WONDER's <10/<20 rules already noted
    floated (which has no defined turnaround or scope commitment). File the Project Review Form and
    DUA request now — 4 weeks is a real critical-path item for M2.
 2. **Before committing M4 to this data**, get written confirmation that county-level aggregate
-   results (not raw records) are publishable. If that comes back no, the fallback is a two-layer
-   compromise: SCP's public 5-year county counts as the observed layer (already in hand, all
-   counties, all sites) plus IHME's county series used only as a temporal-shape prior, explicitly
-   framed in the paper as modeled-on-modeled and weaker evidence — not silently blended in as if
-   equivalent to observed counts.
+   results (not raw records) are publishable. If that comes back no, M4 as specified has no known
+   data source — this audit's job is to report that, not to design the substitute. Two things
+   already ruled out, so a future fallback discussion doesn't re-propose them: SCP's own
+   `average_annual_count` (per `02-counts-vs-rates.md`, it's a 5-year average, not the annual
+   panel the model needs — it does not become usable just because WONDER fell through), and
+   IHME's county series treated as an equivalent observed-count substitute (it's small-area-model
+   output; feeding it into our own spatial model would be fitting a model to another model's
+   estimates, which is a specific methodological decision this audit isn't positioned to make).
+   If a fallback is needed, that's a follow-up design question for the project owner and whoever
+   reviews M4, not a conclusion of Task 0.
 3. This is a **project-owner decision**, not something to resolve by building around it — filing a
    federal data use agreement and waiting ~4 weeks changes the milestone timeline, and needs sign-off
    before M2 proceeds on this item.

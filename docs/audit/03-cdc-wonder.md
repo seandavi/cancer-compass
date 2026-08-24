@@ -153,9 +153,14 @@ nulls — `Suppressed`, `Unreliable`, `Not Applicable`, `Missing`, `Not Availabl
 treat these as first-class categorical states, which is what SPEC.md §3's "no reliable estimate"
 requirement already wants.
 
-**This differs from SCP's rule.** `docs/audit/04-suppression-overlap.md` records SCP suppressing at
-**<16** deaths. WONDER suppresses counts at **<10** and flags rates unreliable at **<20**. Three
-different thresholds across the two sources, so the suppression masks do not coincide and cannot be
+**This differs from SCP's rule.** SCP's own pinned-release documentation, quoted verbatim from
+`notes_mortality.txt` (`10.5281/zenodo.22085273`): "Data has been suppressed to ensure
+confidentiality and stability of rate estimates. Counts are suppressed if fewer than **16**
+records were reported in a specific area-sex-race category." (Corroborated secondhand in
+`cancer-compass/docs/research/epi-view-conventions.md` §7, but the primary source is one HTTP
+request away and is quoted here directly.) WONDER suppresses counts at **<10** and flags rates
+unreliable at **<20**. Three different thresholds across the two sources, so the suppression
+masks do not coincide and cannot be
 assumed to. Any MIR or comparison built across both must carry two distinct missingness reasons.
 
 ### 4a. Compressed Mortality (D140) has a much friendlier county rule — but ends in 2016
@@ -340,10 +345,11 @@ years D76 covers.
 1. Ask CDC whether they will fill a custom county-level data request (cwus@cdc.gov / 888-496-8347),
    and on what terms for public republication. This is the only route the API docs themselves
    endorse. Turnaround is unknown, so it should be opened now rather than after M2 stalls.
-2. Decide whether the paper's scope survives on the alternatives (see the companion note on
-   alternative county mortality sources) — in particular whether a modeled or period-aggregated
-   substitute is acceptable for §2.4's trajectory analytic, which needs annual points with 2020
-   excludable from the fit.
+2. Decide whether the paper's scope survives on whatever substitute is available — in particular
+   whether a modeled or period-aggregated source is acceptable for §2.4's trajectory analytic, which
+   needs annual points with 2020 excludable from the fit. A period-aggregated source is *not*
+   acceptable for §2.4 by construction, so this may reduce to dropping §2.4 or sourcing it
+   differently.
 3. Treat the 2020/2021 bridged-race → single-race seam as a disclosed methods limitation in any
    1999–present panel, whatever the source turns out to be.
 
@@ -351,3 +357,26 @@ years D76 covers.
 policy, and a data provenance chain that cannot be described honestly in a methods section fails
 CLAUDE.md's first line ("every claim the site or paper makes must trace to a pinned, hashed upstream
 source") more badly than a missing analytic does.
+
+---
+
+## Open questions this audit did not close
+
+Recorded so they are not mistaken for settled.
+
+1. **What the substitute numerator is.** A separate survey of alternative county-mortality sources
+   (NCHS public-use micro-data, the NCHS Research Data Center, IHME modelled county estimates,
+   data.cdc.gov holdings, SCP's own annual trend series) was still running when this was written and
+   is **not** reflected here. The two questions that decide the milestone: (a) do the NCHS public-use
+   mortality files carry county of residence, and for which years — sub-state geography is believed
+   to have been removed from 2005 onward, which would leave only 1999–2004 usable; and (b) does the
+   restricted-access route permit **republishing** per-county figures on a public site, or does
+   output review forbid exactly that? A source the project can compute on but not publish from is
+   useless here, given SPEC.md's per-county-page deliverable. Answer (b) before investing in (a).
+2. **D140's API behaviour** — see §4a. Unresolved, probably moot.
+3. **Whether CDC will fill a custom county request, and on what republication terms.** Not asked yet.
+   This is the only route the API documentation itself endorses and it should be opened now.
+4. **WAF sensitivity.** Sustained probing from one IP began returning HTTP 403 (Access Denied) on the
+   web-application path after roughly 20 requests spread over ~15 minutes, while the API path kept
+   working. Anything that ends up talking to WONDER should treat 403 as a back-off signal, not a bug
+   to retry through.

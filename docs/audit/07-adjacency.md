@@ -253,12 +253,25 @@ So the fix is two flags on the `f(..., model="bym2")` term, not a hand-curated n
    county FIPS; 9,282 undirected edges; exactly 3 zero-degree nodes (`15001`, `15003`, `15007`); 6
    connected components with sizes 3108/29/2/1/1/1; and `adjust.for.con.comp=TRUE` is set. A build
    that produces a *connected* county graph has a bug — most likely a wrong TIGER vintage.
-7. **Interpretation caveat for the three Hawaii singletons plus Kalawao/Maui.** Their posteriors
-   borrow no spatial strength, so their credible intervals will be wide and driven by their own
-   counts and the global mean. That is honest and consistent with SPEC.md §0's uncertainty rule,
-   but per SPEC.md §3 these pages should say so rather than presenting an interval that looks
-   like the mainland's. (Kalawao County's population is ~80, so it will be suppressed in the
-   observed data regardless — see `docs/audit/04-suppression-overlap.md`.)
+7. **Interpretation caveat for the three Hawaii singletons plus Kalawao/Maui — and, distinctly, for
+   Alaska.** The Hawaii singletons' posteriors borrow no spatial strength at all, so their credible
+   intervals will be wide and driven by their own counts and the global mean. That is honest and
+   consistent with SPEC.md §0's uncertainty rule, but per SPEC.md §3 these pages should say so
+   rather than presenting an interval that looks like the mainland's. (Kalawao County's population
+   is ~80, so it will be suppressed in the observed data regardless — see
+   `docs/audit/04-suppression-overlap.md`.)
+
+   **Alaska's 29-county component has a related but different issue, and it is not covered by the
+   singleton caveat above.** With per-component sum-to-zero constraints (Recommendation 3, §4),
+   Alaska's spatial random effects can only borrow strength *within* Alaska's 29 counties — they
+   cannot borrow toward the CONUS component or the national mean the way a mainland county can.
+   Since the exceedance probability P(county rate > national rate) is the number SPEC.md §2.2 shows
+   to users, an Alaska county's posterior is built from structurally less borrowed strength than a
+   demographically similar CONUS county's, purely as an artifact of graph topology, not of Alaska's
+   data quality. This is a first-class interpretation issue for exactly the number the site
+   highlights, not a footnote: the per-county output should carry a component identifier (or a
+   simple "borrowed-strength class": CONUS / Alaska / Hawaii-singleton) so the page can state which
+   kind of estimate a reader is looking at.
 
 ---
 

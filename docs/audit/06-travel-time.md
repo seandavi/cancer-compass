@@ -118,9 +118,14 @@ snapshot date, we cannot honour CLAUDE.md's "record what was fetched and when" f
 of this dataset. We can only pin the derived artifact (Dataverse DOI + version 4.0 + per-file md5),
 and the manifest entry must say so explicitly rather than implying we know the provider vintage.
 
-Currency is **not** grounds to recompute the oncologist matrix. A ~1-year-stale NPPES extract moves
-a drive-time-to-nearest-oncologist number very little, and recomputing costs an OSRM build to
-reproduce a number someone already published under CC0.
+Currency is **not** grounds to recompute the oncologist matrix, but the claim needs to be stated
+as an assumption, not a measurement — it wasn't tested here. **Assumed, not measured:** a
+~1-year-stale NPPES extract moves a drive-time-to-nearest-oncologist number only a little. This is
+checkable directly against `05-nppes.md`'s output: that audit ran the full NPPES→geocode pipeline
+on the August 2026 file (37,778 oncologists, six taxonomy codes) and could be diffed against Liu et
+al.'s 9,967 practice sites (three taxonomy codes — note the narrower definition, flagged again in
+§6). That comparison was not run in this audit; do it before leaning on this assumption in the
+paper, and recomputing still costs a full OSRM build regardless, which §5 needs anyway.
 
 ---
 
@@ -147,7 +152,11 @@ Options checked:
 **Preferred: don't crosswalk at all for the nearest-facility measure.** Census publishes 2020
 population-weighted centroids at county and block-group level, both verified HTTP 200 this audit:
 
-- `https://www2.census.gov/geo/docs/reference/cenpop2020/county/CenPop2020_Mean_CO.txt` (3,221 counties)
+- `https://www2.census.gov/geo/docs/reference/cenpop2020/county/CenPop2020_Mean_CO.txt` (3,221
+  counties — this includes Puerto Rico and current Connecticut planning regions, neither of which
+  match our 3,142-county SCP/TIGER2021 universe per `07-adjacency.md`. Drop PR and apply the same
+  `02261`→Valdez-Cordova dissolve / `51019`→`51917` Bedford relabel crosswalk `07` uses before
+  joining, rather than treating this as a fourth, independent county list.)
 - `https://www2.census.gov/geo/docs/reference/cenpop2020/blkgrp/CenPop2020_Mean_BG.txt` (242,335 block groups)
 
 Block groups nest cleanly inside counties, so routing block-group centroids and population-weighting
@@ -161,20 +170,42 @@ where we genuinely need the *published* ZCTA scores rolled up for comparison wit
 ### NCI-designated centers — solved, trivial
 
 `https://gis.cancer.gov/ncicatchment/NCI_CancerCenter_Address_2025.zip` (HTTP 200, 29 KB,
-downloaded and parsed this audit). Point shapefile, **76 records**, fields
-`id, name, Street, City, state, Zip_Code, Latitude, Longitude, County, type, url`, where `type`
-distinguishes Comprehensive / Clinical / Basic Laboratory. File dated 2025-12-17. Companion
-`NCI_Catchment_Areas_2026.zip` and county/catchment mortality workbooks (updated May 2026) are at
-the same portal. No explicit license statement; US federal GIS output, and the portal requests
-citation of DelNero et al., *Cancer Epidemiol Biomarkers Prev* 2022.
-([gis.cancer.gov/ncicatchment](https://gis.cancer.gov/ncicatchment/))
+downloaded and parsed this audit — re-verified 2026-08-24 with DuckDB's `spatial` extension
+directly against the shapefile, not from memory of the field values). Point shapefile,
+**76 records**, fields `id, name, Street, City, state, Zip_Code, Latitude, Longitude, County,
+type, url`. File dated 2025-12-17. Companion `NCI_Catchment_Areas_2026.zip` and
+county/catchment mortality workbooks (updated May 2026) are at the same portal. No explicit
+license statement; US federal GIS output, and the portal requests citation of DelNero et al.,
+*Cancer Epidemiol Biomarkers Prev* 2022. ([gis.cancer.gov/ncicatchment](https://gis.cancer.gov/ncicatchment/))
 
-Two caveats: (a) **main-campus addresses only** — no satellite facilities, and Onega et al.
-(*Cancer* 2017, doi:[10.1002/cncr.30727](https://doi.org/10.1002/cncr.30727)) showed that including
-satellites materially improves measured access for rural and minority populations, so a
-parent-campus-only travel time systematically *overstates* distance; (b) **Basic Laboratory centers
-provide no clinical care** and should be excluded from a care-access measure, leaving 66–68 sites.
-Both belong in the methods text.
+**Correction (2026-08-24, statistical-reviewer pass): the `type` field does not distinguish
+Comprehensive/Clinical/Basic Laboratory** as an earlier draft of this file claimed — that
+conflated the shapefile's `type` values with NCI's formal three-tier P30 designation
+vocabulary without checking. The actual, exhaustive values, counted directly:
+
+| `type` | N |
+|---|---:|
+| Comprehensive Cancer Center | 57 |
+| Cancer Center | 10 |
+| Pediatric Cancer Center | 9 |
+
+**All 76 records appear clinically relevant; there is no "exclude non-clinical" filter to apply
+here** — the previous recommendation to drop "Basic Laboratory centers" to reach "66–68 sites"
+was wrong and should not be carried into the build. If NCI-designated Basic Laboratory centers
+exist and matter for a different reason, they are simply absent from this file, not present and
+excluded.
+
+One caveat stands, now sharpened by the same re-check: the 9 "Pediatric Cancer Center" rows are
+all **St. Jude Children's Research Hospital affiliate/satellite clinics** (Memphis, Springfield,
+Tulsa, Shreveport, Baton Rouge, Huntsville, Peoria, Johnson City, Charlotte) — i.e. this file
+already contains satellite locations for at least one network, contradicting a blanket
+"main-campus addresses only" assumption. For the other centers, **main-campus-only remains the
+working assumption but is not verified either way in this audit** — Onega et al. (*Cancer* 2017,
+doi:[10.1002/cncr.30727](https://doi.org/10.1002/cncr.30727)) showed satellite facilities
+materially improve measured access for rural and minority populations, so wherever this file is
+main-campus-only, travel time is systematically *overstated*, and the St. Jude rows are the
+visible exception to that bias, not proof it's absent elsewhere. State this precisely in methods
+rather than asserting "main-campus only" uniformly.
 
 ### CoC-accredited programs — this is the actual blocker
 
@@ -197,11 +228,12 @@ a scraped facility list we cannot pin or hash.
 
 ### Effort to build NCI travel time
 
-Facility points: done (above). Origins: `CenPop2020_Mean_BG.txt`, verified. Router: OSRM in Docker
-against a Geofabrik `north-america` extract (~14 GB pbf; `osrm-extract` + `osrm-partition` +
-`osrm-customize` is an overnight run on a workstation and wants ~64 GB disk). Then 242,335 origins ×
-~67 clinical NCI destinations via the OSRM `/table` service in chunks — a few hours, embarrassingly
-parallel. Population-weight block groups to county.
+Facility points: done (above) — all 76, since none are excluded by type (correction above).
+Origins: `CenPop2020_Mean_BG.txt`, verified. Router: OSRM in Docker against a Geofabrik
+`north-america` extract (~14 GB pbf; `osrm-extract` + `osrm-partition` + `osrm-customize` is an
+overnight run on a workstation and wants ~64 GB disk). Then 242,335 origins × 76 NCI destinations
+via the OSRM `/table` service in chunks — a few hours, embarrassingly parallel. Population-weight
+block groups to county.
 
 **Estimate: 1–2 days wall clock, most of it unattended OSRM preprocessing.** Cheap, and it gives us
 a router we can reuse for the §2.3 trials bullet ("count within a 60-minute drive"), which has no
@@ -220,7 +252,13 @@ published equivalent at all and must be built regardless.
    nearest-oncologist drive time per ZCTA for free and replaces SPEC.md's within-county oncologist
    density with something strictly better — a county with zero oncologists but one 20 minutes across
    the line stops looking like a desert. Keep the raw zero-count density too, since SPEC.md §2.3 is
-   right that "counties with no oncologist at all are the finding."
+   right that "counties with no oncologist at all are the finding." **Caveat that must travel with
+   this ingest**: Liu et al.'s oncologist universe is built from three NPPES taxonomy codes, while
+   `05-nppes.md` recommends six for our own density measure (including a legacy code that
+   undercounts radiation oncology ~10% if dropped). Using the ingested OD matrix's "nearest
+   oncologist" alongside our own six-code density on the same county page puts two different
+   definitions of "oncologist" on one page — flag this explicitly in the page copy, don't silently
+   reconcile them.
 3. **Do not adopt the published 2SFCA scores as a headline.** Their denominator is Monte
    Carlo-imputed suppressed SCP incidence for 2016–2020 — a different window than our pinned V3, and
    the same back-computation §2.2 rules out. If a 2SFCA is shown, recompute it against a denominator
@@ -228,13 +266,31 @@ published equivalent at all and must be built regardless.
 4. **OSRM is on the critical path regardless**, because the trials bullet needs a 60-minute drive
    catchment. Budget the OSRM build once in M2 and spend it three times (NCI centers, trial sites,
    any recomputed 2SFCA).
-5. **Three distinct "no reliable estimate" states** must exist for access, not one: no oncologist
-   within threshold (11,148 ZCTAs at 45 min), not routable / no site within 200 km (247 ZCTAs, which
-   the release silently encodes as `0`), and county not covered. CLAUDE.md forbids rendering any of
-   them as a bare zero, and the first two mean opposite things for a planner.
+5. **Three distinct "no reliable estimate" states** must exist for access, not one, and they nest —
+   check the containment before wiring up thresholds. At 45 min: **10,901** ZCTAs have a nearest
+   oncologist site within 200 km but beyond 45 minutes' drive; a *separate* **247** ZCTAs have no
+   site within 200 km at all (not routable) and the release silently encodes both as `0`
+   (10,901 + 247 = 11,148, the raw zero-count total — do not use 11,148 as a single state, it
+   conflates the two). The third state is "county not covered by this ingest at all." CLAUDE.md
+   forbids rendering any of the three as a bare zero, and the first two mean opposite things for a
+   planner — "no oncologist close enough" vs. "cannot determine, no site in range to route to."
 6. **Manifest honesty.** Pin Dataverse `doi:10.7910/DVN/OIFW0D` version 4.0 with per-file md5s, and
    record that the upstream NPPES and OpenStreetMap snapshot dates are **not disclosed by the
    depositors** — a limitation of the ingested artifact, not something to paper over.
+7. **Uncertainty and directional bias, named rather than left as a gap** (SPEC.md §0: uncertainty
+   displayed, not hidden — this measure has no sampling error to report as a CI, so the honest
+   substitute is a list of known directional biases, mirroring how `05-nppes.md` §7.7 handles the
+   same problem for oncologist density):
+   - OSM snapshot date and free-flow-vs-congested speed assumption are **undisclosed by the
+     depositors** — drive times are not reproducible from a stated router vintage.
+   - ZCTA centroid definition (population-weighted vs. geometric) is **not stated** in the Liu et
+     al. methods, unlike their broadband variables, which are documented as population-weighted.
+   - Main-campus-only NCI addresses (where they apply — see the St. Jude exception above)
+     **systematically overstate** distance for the affected centers, per Onega et al. 2017 — a
+     one-directional bias, not noise.
+   - Block-group-to-county aggregation (§4) should be population-weighted, not area-weighted, for
+     the same reason the ZCTA-to-county area crosswalk was rejected above — state the weighting
+     method used in the manifest, since it changes the number for large rural counties most.
 
 ---
 

@@ -15,7 +15,15 @@ topic. Both are age-adjusted to the 2000 US standard population (incidence: 19 a
 20 SEER; mortality: 20 age groups) per the same notes files.
 
 **Consequence for SPEC.md §2.1:** a naive incidence-rate ÷ mortality-rate ratio compares 2018–2022
-against 2019–2023 — different eras. The mortality rate used for MIR must be reconstructed from
-CDC WONDER restricted to exactly 2018–2022 (the incidence window), age-adjusted to the 2000 US
-standard to match, not read directly from SCP's published 2019–2023 mortality rate. This confirms
-the spec's premise and its prescribed fix; no methodology change needed here.
+against 2019–2023 — different eras. This part stands: the windows really do differ, exactly as
+SPEC.md assumed. **The prescribed fix does not stand as written.** SPEC.md's fix was "reconstruct
+the mortality rate from CDC WONDER restricted to exactly 2018–2022." `docs/audit/03-cdc-wonder.md`
+and `03b-mortality-alternatives.md` establish that this specific route is not available: WONDER's
+API refuses all county-level queries by policy, and even with access, WONDER's own
+2018-2024-covering database (D158) publishes no county age-adjusted rates or populations, only
+raw counts. Constructing the window-aligned mortality rate now depends on obtaining county death
+*counts* via a different route entirely (the NCHS restricted-use Data Use Agreement, per 03b) plus
+SEER's population files, and computing the rate and its interval ourselves — a materially bigger
+undertaking than "pull a rate from WONDER." Treat this file's finding (the windows differ) as
+settled; treat the construction of the aligned mortality rate as unresolved pending 03/03b's
+open decision.
