@@ -8,6 +8,13 @@ FIPS) was executed end to end during this audit; §6 reports its output.
 The one premise in the task framing that does **not** hold: there is no taxonomy reference file
 inside the NPPES bundle. Taxonomy display names come from NUCC separately (§2).
 
+**Revised after `statistical-reviewer` (`review-m1.md` #2, #14, #15).** Three changes: §6's county
+numbers are recomputed on the corrected **3,142**-county universe with the `07-adjacency.md` §3
+FIPS crosswalk applied (headline moved 62.7% → **62.6%**); §2 now states the **exact seven-code
+list** behind the 37,778 denominator and resolves pediatric heme-onc as *included* (§2/§7 had
+contradicted each other); and the conflated "12.5% non-exact" figure is split into **10.6%
+ZIP-fallback-placed** and **1.5% unplaced**, which are different site states per §7 item 6.
+
 ---
 
 ## 1. The bulk file is retrievable
@@ -98,7 +105,7 @@ the manifest rather than made implicitly:
 | Code | Specialization | Display Name | any | primary | Recommendation |
 |---|---|---|---|---:|---:|
 | `2085R0203X` | Therapeutic Radiology | Therapeutic Radiology Physician | 1,050 | 299 | **Include** with radiation oncology |
-| `2080P0207X` | Pediatric Hematology-Oncology | Pediatric Hematology & Oncology Physician | 4,445 | 3,779 | **Include**, but count separately |
+| `2080P0207X` | Pediatric Hematology-Oncology | Pediatric Hematology & Oncology Physician | 4,445 | 3,779 | **Include** in the headline, also broken out |
 | `207RH0000X` | Hematology | Hematology Physician | 3,718 | 1,561 | **Exclude** (not an oncology code) |
 
 `2085R0203X` matters and is easy to miss. Its NUCC definition is a redirect: *"Therapeutic
@@ -113,10 +120,37 @@ Deliberately **excluded** as non-physician or facility codes, though they match 
 Clinic/Center). The last two are `Section = Non-Individual` — counting them as oncologists would
 double-count institutions against their own staff.
 
-**Entity type filter is mandatory.** Of 48,112 records carrying at least one target code,
+**Entity type filter is mandatory.** Of 48,112 records carrying at least one of the **eight**
+codes named in this section (the five core + `2085R0203X` + `2080P0207X` + `207RH0000X`),
 **38,811 are Entity Type 1 (Individual) and 9,301 are Entity Type 2 (Organization)**. Per the
 bundled `CodeValues.pdf` Exhibit 1-1, `1 = Individual`, `2 = Organization`. A density measure
 must filter `Entity Type Code = 1` or it inflates by ~24%.
+
+### The headline denominator, stated exactly
+
+Three different numbers appear above and they are **not** interchangeable. Pinning them down,
+because the code set behind the headline was ambiguous in the first draft of this file:
+
+| N | Exact definition |
+|---:|---|
+| 48,112 | records with ≥1 of the **eight** codes named in this section, any entity type |
+| 38,811 | of those, `Entity Type Code = 1` |
+| **37,778** | **`Entity Type Code = 1`, country code US or blank, and ≥1 of these seven codes: `207RX0202X`, `207RH0003X`, `2085R0001X`, `2085R0203X`, `2086X0206X`, `207VX0201X`, `2080P0207X`** |
+
+So 48,112 exceeds the sum of the five core codes' `any` counts (45,759) for two reasons: it
+includes `2085R0203X`, `2080P0207X` and `207RH0000X`, and a record carrying two target codes is
+counted once here but twice in the per-code column.
+
+**`207RH0000X` (Hematology) is the only one of the eight excluded from 37,778.**
+
+**Pediatric hematology-oncology is included in the headline, not held out.** Of the 37,778,
+**4,106 carry `2080P0207X`**, and **4,034 of those carry no other oncology code** — so pediatric
+heme-onc is not a rounding artefact riding along on adult oncologists, it is a substantial
+distinct population. Excluding it gives a six-code denominator of **33,744**. The §6 and §7
+numbers are all on the seven-code list; §6 reports the six-code sensitivity alongside, and it
+moves the headline result by 0.3 pp. Report the pediatric count as its own indicator on the
+county page as well — a county whose only oncology presence is pediatric is a materially
+different access story for an adult cancer patient.
 
 ---
 
@@ -262,30 +296,62 @@ permanently unavailable.
 Full run: 9,726,865 NPI records → taxonomy + Entity Type 1 filter → 37,778 US oncologists →
 13,361 distinct practice addresses → Census batch geocode → county FIPS.
 
+### County universe and crosswalk
+
+**All county numbers below are on the corrected 3,142-county universe**, not the 3,144 the first
+draft of this file used. The Census geocoder returns *current* TIGER FIPS
+(`vintage=Current_Current`), which does not match the pinned SCP vintage, so the crosswalk
+established in `07-adjacency.md` §3 is applied to every geocoder result before aggregation:
+
+- dissolve `02063` (Chugach) ∪ `02066` (Copper River) → `02261` (Valdez-Cordova) — the geocoder
+  returns the post-2019 split, SCP/NCI still uses pre-2019 Valdez-Cordova
+- relabel `51019` (Bedford County) → `51917` (NCI's merged Bedford pseudo-FIPS)
+- drop `72001` (Puerto Rico aggregate, not a county) and all `60`/`66`/`69`/`72`/`78` territory FIPS
+
+**181 providers (0.5%) fall outside the 3,142-county universe** after the crosswalk — territories,
+almost entirely Puerto Rico. They are excluded from the county tables, not silently folded in.
+This is a real consequence of the correction: SPEC.md §3 promises a page per county, and Puerto
+Rico has oncologists but no page.
+
+### Assignment paths
+
 | Assignment path | Oncologists | % |
 |---|---:|---:|
-| Street-address geocode (county FIPS exact) | 33,066 | 87.5% |
-| ZIP fallback (largest-land-share county) | 4,129 | 10.9% |
-| Unresolved (no street match, no ZCTA) | 583 | 1.5% |
+| Street-address geocode (county FIPS exact) | 32,992 | 87.3% |
+| ZIP fallback (largest-land-share county) | 4,022 | 10.6% |
+| Unplaced — no street match and no ZCTA | 583 | 1.5% |
+| Placed but outside the 3,142 universe | 181 | 0.5% |
+
+**87.3% + 10.6% = 97.9% of providers are placed in a county in the modelling universe.** The
+remaining 2.1% splits into two categories that must not be merged: 1.5% **unplaced** (we do not
+know the county) and 0.5% **out of universe** (we know the county; it has no page).
 
 Address-level geocoder outcome: 86.6% Match (of which 769/872 "Exact" in a 1,000-address
 validation sample), 12.7% No_Match, 0.7% Tie. Ties need a documented tie-break rule; they are
 small enough to resolve by taking the modal county.
 
-**County coverage — this is the number SPEC.md §2.3 is really asking for:**
+**County coverage — this is the number SPEC.md §2.3 is really asking for.** Recommended method is
+the two-stage one (geocode + ZIP fallback); the geocode-only column is shown only to demonstrate
+that the fallback is worth having, and **should not be quoted as a result**:
 
-| Measure | Geocode only | Geocode + ZIP fallback |
+| Measure (of 3,142) | Geocode only *(rejected)* | **Geocode + ZIP fallback** |
 |---|---:|---:|
 | Counties with ≥1 oncologist | 1,123 | **1,174** |
-| **Counties with ZERO oncologists** | 2,021 (64.3%) | **1,970 (62.7%)** |
+| **Counties with ZERO oncologists** | 2,019 (64.3%) | **1,968 (62.6%)** |
 | Counties with exactly 1 | 214 | 217 |
 | Counties with ≤2 | 321 | 336 |
-| Median oncologists per covered county | 6 | — |
+| Median oncologists per covered county | 6 | 6 |
 
-**Roughly 62–64% of US counties have no oncologist of any of these specialties with a practice
-address in the county.** SPEC.md §2.3 says "counties with no oncologist at all are the finding,
-not missing data" — that instinct is correct and the finding is much larger than a footnote. It
-is the majority of the map.
+**1,968 of 3,142 counties — 62.6% — have no oncologist under any of the seven taxonomy codes with
+a practice address in the county.** SPEC.md §2.3 says "counties with no oncologist at all are the
+finding, not missing data" — that instinct is correct and the finding is much larger than a
+footnote. It is the majority of the map.
+
+**Six-code sensitivity** (excluding pediatric `2080P0207X`, per §2): 33,744 oncologists, 1,166
+counties with ≥1, **1,976 with zero (62.9%)**. The headline moves 0.3 pp, so the pediatric
+include/exclude decision is *not* load-bearing for the headline finding — but it is load-bearing
+for the 8 counties whose only oncology presence is pediatric, which is exactly the kind of county
+this atlas exists to describe. Both numbers are on the same 3,142 universe and crosswalk.
 
 ---
 
@@ -299,28 +365,35 @@ SPEC.md §2.3.
    NUCC version string ("26.1, 7/1/2026") separately from the file hash, since NUCC reuses
    version labels across release dates.
 2. **Record the taxonomy code list as data, not as a hard-coded literal** — the include/exclude
-   decisions in §2 (`2085R0203X` in, `207RH0000X` out, pediatric counted separately) are
-   defensible but arguable, and a reviewer will ask. Six codes recommended for the headline
-   "oncologist" definition: `207RX0202X`, `207RH0003X`, `2085R0001X`, `2085R0203X`,
-   `2086X0206X`, `207VX0201X`.
+   decisions in §2 (`2085R0203X` in, `207RH0000X` out, pediatric in and also broken out) are
+   defensible but arguable, and a reviewer will ask. **Seven codes** for the headline
+   "oncologist" definition — this is the list every number in §6 is computed on:
+   `207RX0202X`, `207RH0003X`, `2085R0001X`, `2085R0203X`, `2086X0206X`, `207VX0201X`,
+   `2080P0207X`. Store `2080P0207X` with a flag so the pediatric sub-count and the six-code
+   sensitivity in §6 are both derivable without re-running the pipeline.
 3. **Filter `Entity Type Code = 1`.** Skipping this inflates counts by ~24%.
-4. **Two-stage county assignment**: Census batch geocoder on the street address (87.5%), HUD or
-   ZCTA ZIP fallback for the remainder (10.9%). Persist the geocode result keyed on the distinct
+4. **Two-stage county assignment**: Census batch geocoder on the street address (87.3%), HUD or
+   ZCTA ZIP fallback for the remainder (10.6%). Persist the geocode result keyed on the distinct
    address string — 37,778 providers collapse to 13,361 addresses, so the geocode is cheap and
    cacheable, and re-running monthly costs ~5 minutes.
+4b. **Apply the `07-adjacency.md` §3 FIPS crosswalk to every geocoder result** before aggregating
+   to counties. The geocoder returns current TIGER FIPS; the pinned SCP vintage does not. Without
+   it, Valdez-Cordova and Bedford silently fail to join and Puerto Rico leaks into the universe.
 5. **Carry the assignment method per provider into the output** so the county page can state how
    its number was derived. A county whose count rests entirely on ZIP-fallback assignment is
    weaker evidence than one built from exact street matches.
 6. **Zero is a real zero, and must not render as "no reliable estimate."** This is a direct
    collision with the CLAUDE.md rule that suppressed/unmodeled cells never render as zero. The
    two states are genuinely different here and both are needed: *"no oncologist practises in this
-   county"* (a measured finding, ~1,970 counties) versus *"we could not determine this"* (the
-   1.5% unresolved). Encode them as distinct states in the per-county JSON, not as the same null.
+   county"* (a measured finding, 1,968 counties) versus *"we could not determine this"* (the 1.5%
+   unplaced). Encode them as distinct states in the per-county JSON, not as the same null.
 7. **Uncertainty (CLAUDE.md: never optional).** A density per 100k from an exact provider count
    has no sampling error, so the honest uncertainty statement is not a confidence interval — it
-   is the **44.6% five-year staleness rate** and the 12.5% non-exact geocode share. State those
-   as a documented data-quality caveat adjacent to the number. Do not manufacture a CI to satisfy
-   the rule; say plainly what is and is not known.
+   is the **44.6% five-year staleness rate** plus the two assignment-quality shares, stated
+   separately: **10.6% of providers placed by ZIP fallback rather than street match** (placed,
+   less precisely) and **1.5% unplaced** (county unknown). Do not add these into one "non-exact"
+   figure — per item 6 they land in different site states. State them as a documented
+   data-quality caveat adjacent to the number, and do not manufacture a CI to satisfy the rule.
 8. **Consider joining `pl_pfile`** to capture secondary practice locations (800,662 NPIs have
    them nationally). This measurably improves on the primary-address-only approach most published
    work uses. Treat it as a documented enhancement with a clear counting rule — a provider at
@@ -334,7 +407,8 @@ SPEC.md §2.3.
 
 **Known limitations to state in the paper**, all measured above rather than asserted: 44.6%
 of records not updated in 5+ years; primary practice address only unless `pl_pfile` is joined;
-12.5% of providers placed by ZIP rather than street match; NPPES reflects *registration*, not
+10.6% of providers placed by ZIP fallback rather than street match and a further 1.5% not placed
+at all; 0.5% placed outside the 3,142-county universe; NPPES reflects *registration*, not
 active clinical practice or FTE, so a listed oncologist may be retired, administrative, or
 practising elsewhere; and per the bundled MLN reference, "Issuance of an NPI does not ensure or
 validate that the Health Care Provider is Licensed or Credentialed."
