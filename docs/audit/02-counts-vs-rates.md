@@ -3,7 +3,7 @@
 **Status: answered, and it corrects a premise in SPEC.md §2.2.**
 
 Verified directly against the pinned V3 parquet files (`10.5281/zenodo.22085273`), cross-checked
-against `cancer-compass/docs/research/data-schema-audit.md` (same vintage, audited earlier from
+against `docs/research/data-schema-audit.md` (same vintage, audited earlier from
 the HF mirror; matching file sizes and schema, but not sha256-verified against the Zenodo copies —
 treat as "same size and schema," not "byte-identical," until hashed).
 

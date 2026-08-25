@@ -34,13 +34,13 @@ excluding `fips='72001'`, at the headline stratum: `locale_type='county'`,
   (the "mortality usable, incidence missing" bucket) and **1** (Wallace County, `20199`) also
   has mortality suppressed, landing it in "neither" instead. Kansas withholds county-level
   incidence by state law (confirmed independently in
-  `cancer-compass/docs/research/data-schema-audit.md`: all 202,230 `withheld_state_law`
+  `docs/research/data-schema-audit.md`: all 202,230 `withheld_state_law`
   incidence rows are Kansas) — a complete, permanent, single-state policy gap, not scattered
   suppression. The site (SPEC.md §3) already plans an explicit Kansas explanation page.
 - **"Incidence usable, mortality missing" (49 counties) is ordinary small-count mortality
   suppression** (<16 deaths — quoted verbatim from the pinned release's own `notes_mortality.txt`
   in `docs/audit/03-cdc-wonder.md`; corroborated in
-  `cancer-compass/docs/research/epi-view-conventions.md` §7), scattered across low-population
+  `docs/research/epi-view-conventions.md` §7), scattered across low-population
   rural/Western/Great Plains states — full list, not a top-N
   excerpt: Nebraska 14, Texas 10, Alaska 7, Montana 5, South Dakota 3, North Dakota 3, Utah 2,
   Idaho 2, New Mexico 1, Colorado 1, Nevada 1. (14+10+7+5+3+3+2+2+1+1+1 = 49.)

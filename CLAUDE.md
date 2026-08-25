@@ -1,4 +1,4 @@
-# county-cancer-atlas
+# cancer-compass
 
 **Every claim the site or paper makes must trace to a pinned, hashed upstream source.**
 Never build against `hf://datasets/seandavis/state-cancer-profiles` "latest" or an
@@ -10,9 +10,16 @@ record what was fetched and when.
 
 Three analytics that don't exist anywhere public today (window-aligned MIR, posterior
 exceedance probability via a BYM2 spatial model, and access-to-care measures), delivered
-as a fully static, prerendered per-county site (Astro → Cloudflare Pages, no backend, no
-client-side query engine), and the findings paper those analytics support. See `SPEC.md`
-for the full plan; audit findings that gate the build live in `docs/audit.md`.
+as a fully static, prerendered site (Astro → Cloudflare Pages, no backend, no
+client-side query engine) with pages per geography, cancer site, and indicator/measure,
+and the findings paper those analytics support. See `SPEC.md` for the full plan; audit
+findings that gate the build live in `docs/audit.md`.
+
+Formerly developed under the working name `county-cancer-atlas`, consolidated with an
+earlier separate `cancer-compass` prototype (now archived as
+`seandavi/cancer-compass-vite-prototype`) — that prototype's audience/IA research moved
+into `docs/research/`, its Vite/DuckDB-WASM architecture did not. See `SPEC.md`'s header
+for why (paper-citable permanent URLs favor a static build over a live query engine).
 
 Depends on `state-cancer-profile-scraper`'s archive as a pinned Zenodo version DOI —
 never latest, never HF's mutable main branch. That repo produces the extract; this repo
@@ -34,5 +41,10 @@ consumes one frozen version of it.
 - **2020 is excluded from any trend fit**, matching SCP's own handling, but still
   displayed as a point. A code path that fits a trend through 2020 is a defect.
 - **All charts are static, build-time SVG.** No client-side charting library.
-- **URLs are permanent.** `/county/{state-abbr}/{county-slug}/`, slugs from FIPS never
-  display names. These go in a citable paper; treat them as immutable once launched.
+- **URLs are permanent, across all page types** (`/county/...`, `/state/...`, `/cancer/...`,
+  `/measure/...` — see SPEC.md §3). Slugs come from FIPS or a stable code, never display names.
+  These go in a citable paper; treat them as immutable once launched.
+- **No open-ended query/comparison UI.** The `/compare` page (SPEC.md §3.D) is bounded to a
+  handful of named places — it is not a general pivot-table or exploration tool. That's a
+  deliberate choice not to compete with Cancer InFocus or ECCO on dashboard features; see
+  `docs/research/peer-tools-landscape.md`.

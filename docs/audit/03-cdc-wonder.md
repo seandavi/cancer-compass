@@ -168,7 +168,7 @@ requirement already wants.
 `notes_mortality.txt` (`10.5281/zenodo.22085273`): "Data has been suppressed to ensure
 confidentiality and stability of rate estimates. Counts are suppressed if fewer than **16**
 records were reported in a specific area-sex-race category." (Corroborated secondhand in
-`cancer-compass/docs/research/epi-view-conventions.md` §7, but the primary source is one HTTP
+`docs/research/epi-view-conventions.md` §7, but the primary source is one HTTP
 request away and is quoted here directly.) WONDER suppresses counts at **<10** and flags rates
 unreliable at **<20**. Three different thresholds across the two sources, so the suppression
 masks do not coincide and cannot be
